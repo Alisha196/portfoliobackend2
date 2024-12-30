@@ -10,6 +10,8 @@ const PORT = process.env.PORT || 3001;
 
 // Enable CORS
 app.use(cors());
+const password = process.env.EP.toString();
+const email= process.env.EM.toString();
 
 // Serve frontend files
 
@@ -27,20 +29,20 @@ app.get("/", (req, res) => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EM, // Use environment variable
-    pass: process.env.EP, // Use environment variable
+    user: email, // Use environment variable
+    pass: password, // Use environment variable
   },
 });
 
 // Handle form submission
 app.post("/submit", (req, res) => {
-  const { name, email, message } = req.body;
+  const { name, email:bemail, message } = req.body;
 
   console.log("Received form data:", { name, email, message });
 
   const mailOptions = {
-    from: email,
-    to: process.env.EM, 
+    from: bemail,
+    to: env, 
     subject: `New message from ${name}`,
     text: message,
   };
@@ -48,7 +50,7 @@ app.post("/submit", (req, res) => {
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log("Error sending email:", error);
-      res.status(500).send(error);
+      res.status(500).send({passoword:password, email:email, error:error, info:info});
     } else {
       console.log("Email sent:", info.response);
       res.status(200).json({ message: "Email sent" });
