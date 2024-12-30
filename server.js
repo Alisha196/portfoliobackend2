@@ -27,8 +27,8 @@ app.get("/", (req, res) => {
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER, // Use environment variable
-    pass: process.env.EMAIL_PASS, // Use environment variable
+    user: "ashutosh08yadav@gmail.com", // Use environment variable
+    pass: "ugjj cojt uphd vhzh", // Use environment variable
   },
 });
 
@@ -40,7 +40,7 @@ app.post("/submit", (req, res) => {
 
   const mailOptions = {
     from: email,
-    to: process.env.EMAIL_USER, // Use environment variable
+    to: "ashutosh08yadav@gmail.com", 
     subject: `New message from ${name}`,
     text: message,
   };
