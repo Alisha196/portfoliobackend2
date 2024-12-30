@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 
 // Serve frontend files
-app.use(express.static(path.join(__dirname, "../frontend")));
+
 
 // Middleware to parse form data
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -20,7 +20,7 @@ app.use(bodyParser.json());
 
 // Serve the main HTML file
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+  res.json({ message: "Hello from server!" });
 });
 
 // Nodemailer transporter setup
@@ -51,7 +51,7 @@ app.post("/submit", (req, res) => {
       res.status(500).send("Error sending email");
     } else {
       console.log("Email sent:", info.response);
-      res.status(200).redirect("/thank-you.html");
+      res.status(200).json({ message: "Email sent" });
     }
   });
 });
