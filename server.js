@@ -7,57 +7,90 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Enable all CORS (or restrict it later)
-app.use(cors());
+// Enable CORS for your frontend
+app.use(cors({
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500"], // Add your frontend URLs
+  credentials: true
+}));
 
-// Middleware to parse JSON
+// Safely retrieve environment variables
+const password = process.env.EP || "default_password";
+const email = process.env.EM || "default_email@example.com";
+
+// Middleware to parse form data
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Load environment variables
-const email = process.env.EM || "default_email@example.com";
-const password = process.env.EP || "default_password";
-
-// Test route
+// Base route for testing server availability
 app.get("/", (req, res) => {
   res.json({ message: "Hello from server!" });
 });
 
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
+// Nodemailer transporter setup
+const transporter = nodemailer.createTransporter({
   service: "gmail",
   auth: {
-    user: email,
-    pass: password,
+    user: email, // Use environment variable
+    pass: password, // Use environment variable (should be App Password for Gmail)
   },
 });
 
-// Contact form route (NOTE: Changed to /api/contact to match frontend)
-app.post("/api/contact", (req, res) => {
-  const { name, email: senderEmail, message } = req.body;
+// Verify transporter configuration
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("Transporter verification failed:", error);
+  } else {
+    console.log("Server is ready to take our messages");
+  }
+});
 
-  if (!name || !senderEmail || !message) {
+// Handle form submission
+app.post("/submit", async (req, res) => {
+  const { name, email: userEmail, message } = req.body;
+
+  // Validate input
+  if (!name || !userEmail || !message) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  console.log("Received form data:", { name, email: senderEmail, message });
+  // Basic email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(userEmail)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  console.log("Received form data:", { name, email: userEmail, message });
 
   const mailOptions = {
-    from: senderEmail,
-    to: email,
+    from: email, // Your email (the one configured in transporter)
+    to: email, // Send to yourself
+    replyTo: userEmail, // User's email for replies
     subject: New message from ${name},
-    text: message,
+    text: Name: ${name}\nEmail: ${userEmail}\nMessage: ${message},
+    html: `
+      <h3>New Contact Form Submission</h3>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${userEmail}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message.replace(/\n/g, '<br>')}</p>
+    `
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("Error sending email:", error);
-      return res.status(500).json({ error: error.message });
-    } else {
-      console.log("Email sent:", info.response);
-      return res.status(200).json({ message: "Email sent successfully" });
-    }
-  });
+  try {
+    // Send email
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+    return res.status(200).json({ message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return res.status(500).json({ error: "Failed to send email. Please try again later." });
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
 });
 
 // Start the server
