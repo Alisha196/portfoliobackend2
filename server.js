@@ -7,50 +7,48 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Enable all CORS
+// Enable all CORS (or restrict it later)
 app.use(cors());
 
-// Safely retrieve environment variables
-const password = process.env.EP || "default_password";
-const email = process.env.EM || "default_email@example.com";
-
-// Middleware to parse form data
+// Middleware to parse JSON
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Base route for testing server availability
+// Load environment variables
+const email = process.env.EM || "default_email@example.com";
+const password = process.env.EP || "default_password";
+
+// Test route
 app.get("/", (req, res) => {
   res.json({ message: "Hello from server!" });
 });
 
-// Nodemailer transporter setup
+// Nodemailer transporter
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: email, // Use environment variable
-    pass: password, // Use environment variable
+    user: email,
+    pass: password,
   },
 });
 
-// Handle form submission
-app.post("/submit", (req, res) => {
-  const { name, email: bemail, message } = req.body;
+// Contact form route (NOTE: Changed to /api/contact to match frontend)
+app.post("/api/contact", (req, res) => {
+  const { name, email: senderEmail, message } = req.body;
 
-  // Validate input
-  if (!name || !bemail || !message) {
+  if (!name || !senderEmail || !message) {
     return res.status(400).json({ error: "All fields are required" });
   }
 
-  console.log("Received form data:", { name, email: bemail, message });
+  console.log("Received form data:", { name, email: senderEmail, message });
 
   const mailOptions = {
-    from: bemail,
-    to: email, // Correct recipient
-    subject: `New message from ${name}`,
+    from: senderEmail,
+    to: email,
+    subject: New message from ${name},
     text: message,
   };
 
-  // Send email
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error("Error sending email:", error);
@@ -64,5 +62,5 @@ app.post("/submit", (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(Server is running on http://localhost:${PORT});
 });
